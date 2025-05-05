@@ -1,0 +1,55 @@
+[project]
+name = "drf-template"
+version = "1.0.0"
+description = "A starter template for building REST APIs with DRF"
+authors = []
+readme = "README.md"
+requires-python = ">=3.12,<4"
+dependencies = [
+    "django>=5.2",
+    "djangorestframework (>=3.16.0,<4.0.0)",
+    "dj-database-url (>=2.3.0,<3.0.0)",
+    "django-cors-headers (>=4.7.0,<5.0.0)",
+    "django-environ (>=0.12.0,<0.13.0)",
+    "drf-spectacular (>=0.28.0,<0.29.0)",
+    "drf-standardized-errors (>=0.14.1,<0.15.0)",
+    "django-structlog (>=9.1.1,<10.0.0)",
+    "whitenoise (>=6.9.0,<7.0.0)",
+    "httpx (>=0.28.1,<0.29.0)",
+    "gevent (>=25.4.2,<26.0.0)",
+    "gunicorn (>=23.0.0,<24.0.0)",
+    "psycopg[binary] (>=3.2.7,<4.0.0)",
+    "psycopg[pool] (>=3.2.7,<4.0.0)",
+    "pytz (>=2025.2,<2026.0)",
+    "rich (>=14.0.0,<15.0.0)",
+]
+
+[dependency-groups]
+dev = [
+    "django-stubs>=5.2.0",
+    "djangorestframework-stubs>=3.16.0",
+    "factory-boy>=3.3.3",
+    "pre-commit>=4.2.0",
+    "pytest>=8.3.5",
+    "pytest-django>=4.11.1",
+    "ruff>=0.11.8",
+]
+
+[tool.pytest.ini_options]
+addopts = "--showlocals --no-migrations"
+testpaths = ["tests"]
+filterwarnings = [
+    "ignore:datetime.datetime.utcnow*:DeprecationWarning",
+]
+DJANGO_SETTINGS_MODULE = "api.settings.testing"
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.ruff.lint]
+extend-select = ["I"] # enable import sorting
+ignore = ["E266", "E501", "F403", "W291"]
+
+[tool.django-stubs]
+django_settings_module = "api.settings.local"

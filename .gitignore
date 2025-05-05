@@ -1,0 +1,10 @@
+*.pyc
+*.sqlite*
+__pycache__/*
+*/__pycache__/*
+.env
+.venv/
+*.zip*
+*_cache/
+.DS_Store
+collectstatic/

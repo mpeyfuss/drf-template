@@ -4,7 +4,13 @@ from rest_framework.serializers import ModelSerializer
 User = get_user_model()
 
 
-class UserViewSerializer(ModelSerializer):
+class UserPrivateViewSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = ["username", "email", "created_at", "updated_at"]
+
+
+class UserPublicViewSerializer(ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["username", "created_at", "updated_at"]

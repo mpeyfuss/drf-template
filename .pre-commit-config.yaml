@@ -3,7 +3,7 @@ repos:
     hooks:
       - id: migrations-check
         name: migrations-check
-        entry: uv run python manage.py makemigrations --check
+        entry: uv run manage.py makemigrations --check
         language: system
         types: []
         pass_filenames: false

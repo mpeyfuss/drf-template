@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from users.serializers import UserViewSerializer
+from users.serializers import UserPublicViewSerializer
 
 User = get_user_model()
 
@@ -21,9 +21,8 @@ class ExampleUserLookup(APIView):
     permission_classes = [AllowAny]
 
     @extend_schema(
-        summary="Lookup a user by ID (Insecure Example)",
+        summary="Lookup a user by ID",
         description="""
-        THIS IS AN EXAMPLE ENDPOINT AND IS NOT SECURE BECAUSE IT ALLOWS ANYONE TO LOOKUP USER INFO.
         It retrieves the details of a user based on the provided user ID.
         """,
         parameters=[
@@ -36,16 +35,16 @@ class ExampleUserLookup(APIView):
             ),
         ],
         responses={
-            status.HTTP_200_OK: UserViewSerializer,
+            status.HTTP_200_OK: UserPublicViewSerializer,
             status.HTTP_404_NOT_FOUND: {"description": "User not found"},
         },
     )
     def get(self, request, user_id: int):
-        """THIS IS AN EXAMPLE ENDPOINT AND IS NOT SECURE BECAUSE IT ALLOWS ANYONE TO LOOKUP USER INFO"""
+        """Example endpoint for looking up users by id"""
 
         try:
             user = User.objects.get(id=user_id)
         except User.DoesNotExist:
             raise Http404("User id not found")
 
-        return Response(UserViewSerializer(user).data, status=status.HTTP_200_OK)
+        return Response(UserPublicViewSerializer(user).data, status=status.HTTP_200_OK)

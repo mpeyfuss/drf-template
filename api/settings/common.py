@@ -216,7 +216,7 @@ CORS_ALLOW_CREDENTIALS = True
 
 # https://drf-standardized-errors.readthedocs.io/en/latest/settings.html
 DRF_STANDARDIZED_ERRORS = {
-    "EXCEPTION_FORMATTER_CLASS": "utils.rest_framework.formatters.FilteredExceptionFormatter",
+    "EXCEPTION_FORMATTER_CLASS": "utils.formatters.FilteredExceptionFormatter",
     "ENABLE_IN_DEBUG_FOR_UNHANDLED_EXCEPTIONS": True,
     "ALLOWED_ERROR_STATUS_CODES": [
         "400",  # Bad Request

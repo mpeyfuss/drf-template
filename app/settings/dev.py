@@ -1,16 +1,13 @@
+# import re
+
 import dj_database_url
 
 from .common import *
 
 # Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
+# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 DATABASES = {
-    "default": (
-        dj_database_url.config(env="DATABASE_URL")
-        | {
-            "ATOMIC_REQUESTS": True,
-        }
-    ),
+    "default": dj_database_url.config(env="DATABASE_URL"),
 }
 
 # Override log level
@@ -18,10 +15,7 @@ LOGGING["root"]["level"] = logging.WARNING  # noqa
 LOGGING["loggers"]["django_structlog"]["level"] = logging.WARNING  # noqa
 
 # CORS
-CORS_ALLOWED_ORIGINS = []
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    # TODO - add origins here
-]
+CORS_ALLOW_ALL_ORIGINS = True
 
 # CSRF
 CSRF_TRUSTED_ORIGINS = [
@@ -29,6 +23,5 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # Allow django to detect if request was made via https.
-# this header is set by the Elastic Load Balancer
 SECURE_SSL_REDIRECT = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

@@ -5,7 +5,7 @@ fmt:
 	uv run ruff format .
 
 # lint code
-lint:
+lint: fmt
 	uv run ruff check --fix .
 
 #####################################
@@ -27,7 +27,7 @@ stop-infra:
 	docker compose -f docker-compose.local.yaml down
 
 run-server:
-	uv run gunicorn api.wsgi -k gevent --bind localhost:8000 --reload
+	uv run gunicorn app.wsgi -k gevent --bind localhost:8000 --reload
 
 #####################################
 ### TESTING

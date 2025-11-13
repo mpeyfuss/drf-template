@@ -1,6 +1,6 @@
 from rest_framework.renderers import JSONRenderer
 
-from api.views import health
+from app.views import health
 
 
 class HealthCheckMiddleware:

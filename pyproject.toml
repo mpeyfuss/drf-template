@@ -42,7 +42,7 @@ testpaths = ["tests"]
 filterwarnings = [
     "ignore:datetime.datetime.utcnow*:DeprecationWarning",
 ]
-DJANGO_SETTINGS_MODULE = "api.settings.testing"
+DJANGO_SETTINGS_MODULE = "app.settings.testing"
 
 [tool.ruff]
 line-length = 88
@@ -53,4 +53,4 @@ extend-select = ["I"] # enable import sorting
 ignore = ["E266", "E501", "F403", "W291"]
 
 [tool.django-stubs]
-django_settings_module = "api.settings.local"
+django_settings_module = "app.settings.local"

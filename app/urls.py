@@ -2,7 +2,7 @@
 URL configuration for the api.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.1/topics/http/urls/
+    https://docs.djangoproject.com/en/5.2/topics/http/urls/
 Examples:
 Function views
     1. Add an import:  from my_app import views
@@ -24,16 +24,16 @@ from drf_spectacular.views import (
 
 from users.views import ExampleUserLookup
 
-from . import views as api_views
+from . import views as app_views
 
 urlpatterns = [
     #
     # General
     #
-    path("", api_views.index),
-    path("robots.txt", api_views.robots),
-    path("favicon.ico", api_views.favicon),
-    path("health", api_views.health),
+    path("", app_views.index),
+    path("robots.txt", app_views.robots),
+    path("favicon.ico", app_views.favicon),
+    path("health", app_views.health),
     path("admin", admin.site.urls),
     #
     # API docs

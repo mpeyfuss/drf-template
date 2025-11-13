@@ -50,7 +50,7 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = "users.User"
 
 MIDDLEWARE = [
-    "api.middleware.HealthCheckMiddleware",
+    "app.middleware.HealthCheckMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -63,12 +63,12 @@ MIDDLEWARE = [
     "django_structlog.middlewares.RequestMiddleware",
 ]
 
-ROOT_URLCONF = "api.urls"
+ROOT_URLCONF = "app.urls"
 
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "api/templates"],
+        "DIRS": [BASE_DIR / "app/templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -81,7 +81,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "api.wsgi.application"
+WSGI_APPLICATION = "app.wsgi.application"
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -116,7 +116,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "collectstatic"
-STATICFILES_DIRS = [BASE_DIR / "api/static"]
+STATICFILES_DIRS = [BASE_DIR / "app/static"]
 
 # Storages
 STORAGES = {
@@ -193,7 +193,7 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     # https://www.django-rest-framework.org/api-guide/pagination/
-    "DEFAULT_PAGINATION_CLASS": "api.pagination.ApiPagination",
+    "DEFAULT_PAGINATION_CLASS": "app.pagination.ApiPagination",
     "ORDERING_PARAM": "order",
     # https://www.django-rest-framework.org/api-guide/testing/
     "TEST_REQUEST_DEFAULT_FORMAT": "json",

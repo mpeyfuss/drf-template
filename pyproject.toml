@@ -6,35 +6,38 @@ authors = []
 readme = "README.md"
 requires-python = ">=3.12,<4"
 dependencies = [
-    "django>=5.2.8",
-    "djangorestframework (>=3.16.1,<4.0.0)",
-    "dj-database-url (>=3.0.1,<4.0.0)",
-    "django-cors-headers (>=4.9.0,<5.0.0)",
-    "django-environ (>=0.12.0,<0.13.0)",
-    "drf-spectacular (>=0.29.0,<0.30.0)",
-    "drf-standardized-errors (>=0.15.0,<0.16.0)",
-    "django-structlog (>=10.0.0,<11.0.0)",
-    "whitenoise (>=6.11.0,<7.0.0)",
-    "httpx (>=0.28.1,<0.29.0)",
-    "gevent (>=25.9.1,<26.0.0)",
-    "gunicorn (>=23.0.0,<24.0.0)",
-    "psycopg[binary] (>=3.2.12,<4.0.0)",
-    "psycopg[pool] (>=3.2.12,<4.0.0)",
-    "pytz (>=2025.2,<2026.0)",
-    "rich (>=14.2.0,<15.0.0)",
+    "django==6.0.3",
+    "djangorestframework==3.17.1",
+    "dj-database-url==3.1.2",
+    "django-cors-headers==4.9.0",
+    "django-environ==0.13.0",
+    "drf-spectacular==0.29.0",
+    "drf-standardized-errors==0.15.0",
+    "django-structlog==10.0.0",
+    "whitenoise==6.12.0",
+    "httpx==0.28.1",
+    "gevent==25.9.1",
+    "gunicorn==25.1.0",
+    "psycopg[binary]==3.3.3",
+    "psycopg[pool]==3.3.3",
+    "pytz==2026.1.post1",
+    "rich==14.3.3",
 ]
 
 [dependency-groups]
 dev = [
-    "django-stubs>=5.2.7",
-    "djangorestframework-stubs>=3.16.5",
+    "django-stubs==6.0.1",
+    "djangorestframework-stubs==3.16.8",
     "factory-boy>=3.3.3",
-    "pre-commit>=4.3.0",
-    "pytest>=8.4.2",
-    "pytest-django>=4.11.1",
+    "pre-commit==4.5.1",
+    "pytest==9.0.2",
+    "pytest-django==4.12.0",
     "pytest-recording>=0.13.4",
-    "ruff>=0.14.3",
+    "ruff==0.15.7",
 ]
+
+[tool.uv]
+exclude-newer = "7 days"
 
 [tool.pytest.ini_options]
 addopts = "--showlocals --no-migrations"

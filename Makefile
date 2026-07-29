@@ -1,42 +1,38 @@
-#####################################
-### RUFF
-#####################################
+# Format code
 fmt:
 	uv run ruff format .
 
 # lint code
-lint: fmt
+lint:
 	uv run ruff check --fix .
 
-#####################################
-### DJANGO
-#####################################
+# Django
+server:
+	uv run python manage.py runserver
+
 migrations:
 	uv run python manage.py makemigrations
 
 migrate:
 	uv run python manage.py migrate
 
-superuser:
-	uv run python manage.py createsuperuser
+# Check migrations are complete and backward-compatible (expand/contract safe).
+# Lints only migrations added since origin/dev (run `git fetch` first).
+check-migrations:
+	uv run python manage.py makemigrations --check --dry-run
+	uv run python manage.py lintmigrations --project-root-path . --git-commit-id origin/dev
 
-run-infra:
-	docker compose -f docker-compose.local.yaml up -d
+# Celery
+worker:
+	DJANGO_SETTINGS_MODULE=config.settings.local DJANGO_READ_DOT_ENV_FILE=True CELERY_TASK_ALWAYS_EAGER=False uv run celery -A config worker -l info --pool gevent --concurrency $${CELERY_WORKER_CONCURRENCY:-100}
 
-stop-infra:
-	docker compose -f docker-compose.local.yaml down
+beat:
+	DJANGO_SETTINGS_MODULE=config.settings.local DJANGO_READ_DOT_ENV_FILE=True CELERY_TASK_ALWAYS_EAGER=False uv run celery -A config beat -l info
 
-run-server:
-	uv run gunicorn app.wsgi -k gevent --bind localhost:8000 --reload
-
-#####################################
-### TESTING
-#####################################
+# Tests
 test:
 	uv run pytest
 
-unit-test:
-	uv run pytest tests/unit
-
-func-test:
-	uv run pytest tests/functional
+coverage:
+	uv run coverage run -m pytest
+	uv run coverage report

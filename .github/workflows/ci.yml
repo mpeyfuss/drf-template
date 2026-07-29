@@ -1,0 +1,121 @@
+name: CI
+
+# Enable Buildkit and let compose use it to speed up image building
+env:
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+
+on:
+  pull_request:
+    branches: ['dev', 'main']
+
+  push:
+    branches: ['dev', 'main']
+
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  linter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: '.python-version'
+      - name: Run pre-commit
+        uses: pre-commit/action@v3.0.1
+
+  # With no caching at all the entire ci process takes 3m to complete!
+  pytest:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7.2
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      postgres:
+        image: postgres:18
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: 'postgres://postgres:postgres@localhost:5432/postgres'
+      REDIS_URL: 'redis://localhost:6379/0'
+      SECRET_KEY: 'ci-only-secret-key-with-more-than-fifty-unique-characters-123456789'
+      SENTRY_DSN: ''
+      MAILGUN_API_KEY: 'ci-placeholder'
+      MAILGUN_DOMAIN: 'example.com'
+      DEFAULT_FROM_EMAIL: 'API <noreply@example.com>'
+      DJANGO_ALLOWED_HOSTS: 'example.com'
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v6
+        with:
+          # Full history so the migration linter can diff new migrations
+          # against the base branch.
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: "true"
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: ".python-version"
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Check for missing migrations
+        run: uv run python manage.py makemigrations --check --dry-run --settings=config.settings.test
+
+      - name: Run DB Migrations
+        run: uv run python manage.py migrate --settings=config.settings.test
+
+      - name: Lint new migrations for backward-incompatibility
+        # Only migrations added since the base branch are linted, so already-released
+        # third-party migrations are never re-flagged. On a PR this is the branch the
+        # PR targets; on a push it falls back to dev.
+        run: |
+          BASE="${{ github.base_ref || 'dev' }}"
+          git fetch --no-tags --prune origin "+refs/heads/${BASE}:refs/remotes/origin/${BASE}"
+          uv run python manage.py lintmigrations \
+            --settings=config.settings.test \
+            --project-root-path . \
+            --git-commit-id "origin/${BASE}"
+
+      - name: Test with pytest
+        run: uv run coverage run -m pytest
+
+      - name: Report coverage
+        run: uv run coverage report
+
+      - name: Type check
+        run: uv run mypy .
+
+      - name: Check production settings
+        run: DJANGO_SETTINGS_MODULE=config.settings.deployed uv run python manage.py check --deploy --fail-level WARNING
+
+      - name: Validate OpenAPI schema
+        run: DJANGO_SETTINGS_MODULE=config.settings.deployed uv run python manage.py spectacular --validate --fail-on-warn --file /tmp/openapi.yml

@@ -1,0 +1,4 @@
+"$schema" = "https://railway.com/railway.schema.json"
+
+[deploy]
+startCommand = "exec celery -A config worker -l info --pool gevent --concurrency ${CELERY_WORKER_CONCURRENCY:-100}"

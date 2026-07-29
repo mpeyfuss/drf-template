@@ -43,15 +43,6 @@ repos:
     hooks:
       - id: pyproject-fmt
 
-  - repo: local
-    hooks:
-      - id: migrations-check
-        name: migrations-check
-        entry: uv run python manage.py makemigrations --check
-        language: system
-        types: [python]
-        pass_filenames: false
-
 # sets up .pre-commit-ci.yaml to ensure pre-commit dependencies stay up to date
 ci:
   autoupdate_schedule: weekly

@@ -94,16 +94,26 @@ jobs:
         run: uv run python manage.py migrate --settings=config.settings.test
 
       - name: Lint new migrations for backward-incompatibility
-        # Only migrations added since the base branch are linted, so already-released
-        # third-party migrations are never re-flagged. On a PR this is the branch the
-        # PR targets; on a push it falls back to dev.
+        # Only migrations added since the base are linted, so already-released
+        # third-party migrations are never re-flagged. On a PR the base is the
+        # branch the PR targets; on a push it's the commit the branch was at
+        # before this push (github.event.before).
         run: |
-          BASE="${{ github.base_ref || 'dev' }}"
-          git fetch --no-tags --prune origin "+refs/heads/${BASE}:refs/remotes/origin/${BASE}"
+          if [ -n "${{ github.base_ref }}" ]; then
+            git fetch --no-tags --prune origin "+refs/heads/${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}"
+            BASE="origin/${{ github.base_ref }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          # Skip on branch creation / first push, where there is no prior commit to diff against.
+          if [ "${BASE}" = "0000000000000000000000000000000000000000" ]; then
+            echo "No base commit to diff against; skipping migration lint."
+            exit 0
+          fi
           uv run python manage.py lintmigrations \
             --settings=config.settings.test \
             --project-root-path . \
-            --git-commit-id "origin/${BASE}"
+            --git-commit-id "${BASE}"
 
       - name: Test with pytest
         run: uv run coverage run -m pytest

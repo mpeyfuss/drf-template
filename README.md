@@ -277,3 +277,7 @@ python manage.py createsuperuser
 Unmatched URLs return a JSON 404 using the same response shape as
 `drf-standardized-errors`. Errors raised within API views are handled by
 `drf-standardized-errors` directly.
+
+## License
+
+Released under the [MIT License](LICENSE).

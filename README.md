@@ -52,7 +52,7 @@ uv run python manage.py runserver
 uv run python manage.py createsuperuser
 ```
 
-Admin is available at `/sadmin/`.
+Admin is available at `/admin`.
 
 ### Running tests
 
@@ -250,7 +250,7 @@ python manage.py createsuperuser
 #### 7. Verify
 
 - Hit `https://<your-domain>/health` -- should return `{"status": "ok"}`.
-- Log into `https://<your-domain>/sadmin/` with the superuser account.
+- Log into `https://<your-domain>/admin` with the superuser account.
 - Check Sentry for the deployment release.
 
 ### Notes
@@ -272,7 +272,7 @@ python manage.py createsuperuser
 - `GET /health` -- database readiness check (public)
 - `GET /schema` -- OpenAPI schema (admin only)
 - `GET /docs` -- Swagger UI (admin only)
-- `GET /sadmin/` -- Django admin
+- `GET /admin` -- Django admin
 
 Unmatched URLs return a JSON 404 using the same response shape as
 `drf-standardized-errors`. Errors raised within API views are handled by

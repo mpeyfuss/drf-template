@@ -136,7 +136,7 @@ EMAIL_TIMEOUT = 5
 
 # ADMIN
 # ------------------------------------------------------------------------------
-ADMIN_URL = "sadmin"
+ADMIN_URL = "admin"
 ADMINS: list[tuple[str, str]] = []
 MANAGERS = ADMINS
 

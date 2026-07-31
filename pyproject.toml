@@ -37,7 +37,6 @@ dependencies = [
 [dependency-groups]
 dev = [
   "coverage==7.15.2",
-  "django-migration-linter==6.0.0",
   "django-stubs[compatible-mypy]==6.0.7",
   "django-upgrade==1.31.1",
   "djangorestframework-stubs==3.17.0",

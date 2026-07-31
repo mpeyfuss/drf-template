@@ -1,10 +1,7 @@
 import logging
 
-from django.db import DatabaseError
-from django.db import connection
-from django.db import transaction
-from django.http import HttpRequest
-from django.http import JsonResponse
+from django.db import DatabaseError, connection, transaction
+from django.http import HttpRequest, JsonResponse
 from django.utils.decorators import method_decorator
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema

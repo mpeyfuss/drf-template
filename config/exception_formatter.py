@@ -1,8 +1,7 @@
 from drf_standardized_errors.formatter import (
     ExceptionFormatter as BaseExceptionFormatter,
 )
-from drf_standardized_errors.types import SERVER_ERROR
-from drf_standardized_errors.types import ErrorResponse
+from drf_standardized_errors.types import SERVER_ERROR, ErrorResponse
 
 
 class ExceptionFormatter(BaseExceptionFormatter):

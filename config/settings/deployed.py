@@ -64,6 +64,9 @@ CACHES = {
 # ------------------------------------------------------------------------------
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = True
+# Railway's internal health check hits the container over plain HTTP (no
+# X-Forwarded-Proto), so exempt it from the HTTPS redirect to avoid a 301.
+SECURE_REDIRECT_EXEMPT = [r"^health$"]
 SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_NAME = "__Secure-sessionid"
 CSRF_COOKIE_SECURE = True
@@ -83,16 +86,18 @@ STORAGES = {
 
 # EMAIL
 # ------------------------------------------------------------------------------
-INSTALLED_APPS += ["anymail"]
-EMAIL_BACKEND = "anymail.backends.mailgun.EmailBackend"
-ANYMAIL = {
-    "MAILGUN_API_KEY": env("MAILGUN_API_KEY"),
-    "MAILGUN_SENDER_DOMAIN": env("MAILGUN_DOMAIN"),
-    "MAILGUN_API_URL": "https://api.mailgun.net/v3",
-}
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
-SERVER_EMAIL = DEFAULT_FROM_EMAIL
-EMAIL_SUBJECT_PREFIX = ""
+MAILGUN_API_KEY = env("MAILGUN_API_KEY", default=None)
+if MAILGUN_API_KEY:
+    INSTALLED_APPS += ["anymail"]
+    EMAIL_BACKEND = "anymail.backends.mailgun.EmailBackend"
+    ANYMAIL = {
+        "MAILGUN_API_KEY": MAILGUN_API_KEY,
+        "MAILGUN_SENDER_DOMAIN": env("MAILGUN_DOMAIN"),
+        "MAILGUN_API_URL": "https://api.mailgun.net/v3",
+    }
+    DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
+    SERVER_EMAIL = DEFAULT_FROM_EMAIL
+    EMAIL_SUBJECT_PREFIX = ""
 
 # LOGGING
 # ------------------------------------------------------------------------------
@@ -134,24 +139,25 @@ LOGGING = {
 
 # SENTRY
 # ------------------------------------------------------------------------------
-SENTRY_DSN = env("SENTRY_DSN")
-SENTRY_ENVIRONMENT = env(
-    "SENTRY_ENVIRONMENT",
-    default=env("RAILWAY_ENVIRONMENT_NAME", default="deployed"),
-)
-SENTRY_RELEASE = env(
-    "SENTRY_RELEASE",
-    default=env("RAILWAY_GIT_COMMIT_SHA", default=None),
-)
-sentry_sdk.init(
-    dsn=SENTRY_DSN,
-    environment=SENTRY_ENVIRONMENT,
-    release=SENTRY_RELEASE,
-    integrations=[
-        LoggingIntegration(level=logging.INFO, event_level=logging.ERROR),
-        DjangoIntegration(),
-        CeleryIntegration(),
-        RedisIntegration(),
-    ],
-    traces_sample_rate=0.0,
-)
+SENTRY_DSN = env("SENTRY_DSN", default=None)
+if SENTRY_DSN:
+    SENTRY_ENVIRONMENT = env(
+        "SENTRY_ENVIRONMENT",
+        default=env("RAILWAY_ENVIRONMENT_NAME", default="deployed"),
+    )
+    SENTRY_RELEASE = env(
+        "SENTRY_RELEASE",
+        default=env("RAILWAY_GIT_COMMIT_SHA", default=None),
+    )
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        environment=SENTRY_ENVIRONMENT,
+        release=SENTRY_RELEASE,
+        integrations=[
+            LoggingIntegration(level=logging.INFO, event_level=logging.ERROR),
+            DjangoIntegration(),
+            CeleryIntegration(),
+            RedisIntegration(),
+        ],
+        traces_sample_rate=0.0,
+    )

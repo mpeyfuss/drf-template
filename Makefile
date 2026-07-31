@@ -7,6 +7,12 @@ lint:
 	uv run ruff check --fix .
 
 # Django
+# Create a new app under apps/ with the correct AppConfig name.
+# usage: make startapp name=<app_name>
+startapp:
+	mkdir -p apps/$(name)
+	uv run python manage.py startapp $(name) apps/$(name) --template apps/_template
+
 server:
 	uv run python manage.py runserver
 

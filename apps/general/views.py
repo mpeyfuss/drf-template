@@ -5,10 +5,11 @@ from django.http import HttpRequest, JsonResponse
 from django.utils.decorators import method_decorator
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
-from rest_framework import serializers
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from apps.general.serializers import HealthSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +29,6 @@ def page_not_found(_request: HttpRequest, exception: Exception) -> JsonResponse:
         },
         status=404,
     )
-
-
-class HealthSerializer(serializers.Serializer):
-    status = serializers.CharField()
 
 
 class IndexView(APIView):

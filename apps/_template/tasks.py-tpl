@@ -1,0 +1,3 @@
+from celery import shared_task  # noqa: F401
+
+# Define your Celery tasks here.

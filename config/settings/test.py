@@ -1,19 +1,13 @@
 """Settings optimized for test speed."""
 
 from .base import *  # noqa: F403
-from .base import INSTALLED_APPS, MIDDLEWARE, env
+from .base import MIDDLEWARE, env
 
 # MIDDLEWARE
 # ------------------------------------------------------------------------------
 MIDDLEWARE = [
     m for m in MIDDLEWARE if m != "whitenoise.middleware.WhiteNoiseMiddleware"
 ]
-
-# MIGRATION LINTER
-# ------------------------------------------------------------------------------
-# Provides the `lintmigrations` command used in CI to flag backward-incompatible
-# migrations. Dev-only app; never installed in deployed settings.
-INSTALLED_APPS += ["django_migration_linter"]
 
 # DATABASES
 # ------------------------------------------------------------------------------

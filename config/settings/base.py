@@ -51,6 +51,7 @@ THIRD_PARTY_APPS = [
     "corsheaders",
     "drf_spectacular",
     "drf_standardized_errors",
+    "import_export",
 ]
 LOCAL_APPS = [
     "apps.general",

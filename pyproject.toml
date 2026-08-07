@@ -20,6 +20,7 @@ dependencies = [
   "django-cors-headers==4.9.0",
   "django-environ==0.14.0",
   "django-http-compression==1.4.0",
+  "django-import-export==4.4.1",
   "django-redis==7.0.0",
   "djangorestframework==3.17.1",
   "drf-orjson-renderer==1.8.0",

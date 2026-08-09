@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from apps.general.views import HealthView, IndexView
@@ -13,6 +13,8 @@ urlpatterns = [
     # General
     path("", IndexView.as_view(), name="index"),
     path("health", HealthView.as_view(), name="health"),
+    # Auth
+    path("auth/", include("apps.users.urls")),
     # Docs
     path("schema", SpectacularAPIView.as_view(), name="api-schema"),
     path(

@@ -57,14 +57,13 @@ jobs:
           --health-retries 5
 
     env:
+      # Only secrets/connection strings are read from the environment; hosts,
+      # origins, DB pool, and email domain are hardcoded in dev.py/prod.py.
       DATABASE_URL: 'postgres://postgres:postgres@localhost:5432/postgres'
       REDIS_URL: 'redis://localhost:6379/0'
       SECRET_KEY: 'ci-only-secret-key-with-more-than-fifty-unique-characters-123456789'
       SENTRY_DSN: ''
       MAILGUN_API_KEY: 'ci-placeholder'
-      MAILGUN_DOMAIN: 'example.com'
-      DEFAULT_FROM_EMAIL: 'API <noreply@example.com>'
-      DJANGO_ALLOWED_HOSTS: 'example.com'
 
     steps:
       - name: Checkout Code Repository
@@ -103,7 +102,7 @@ jobs:
         run: uv run mypy .
 
       - name: Check production settings
-        run: DJANGO_SETTINGS_MODULE=config.settings.deployed uv run python manage.py check --deploy --fail-level WARNING
+        run: DJANGO_SETTINGS_MODULE=config.settings.prod uv run python manage.py check --deploy --fail-level WARNING
 
       - name: Validate OpenAPI schema
-        run: DJANGO_SETTINGS_MODULE=config.settings.deployed uv run python manage.py spectacular --validate --fail-on-warn --file /tmp/openapi.yml
+        run: DJANGO_SETTINGS_MODULE=config.settings.prod uv run python manage.py spectacular --validate --fail-on-warn --file /tmp/openapi.yml

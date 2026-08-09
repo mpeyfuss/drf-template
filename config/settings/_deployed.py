@@ -1,5 +1,11 @@
 # ruff: noqa: E501
-"""Settings shared by all Railway-deployed environments (dev + production)."""
+"""Common configuration for the Railway-deployed environments.
+
+Not selected directly via ``DJANGO_SETTINGS_MODULE`` -- ``dev.py`` and ``prod.py``
+import it and add their own hardcoded hosts, CORS/CSRF origins, and cookie policy.
+Only secrets and Railway-injected connection strings are read from the environment;
+everything else is hardcoded per environment.
+"""
 
 import logging
 import ssl
@@ -13,15 +19,9 @@ from sentry_sdk.integrations.redis import RedisIntegration
 from .base import *  # noqa: F403
 from .base import INSTALLED_APPS, env
 
-# GENERAL
+# SECRETS (environment-injected on Railway; never hardcoded)
 # ------------------------------------------------------------------------------
 SECRET_KEY = env("SECRET_KEY")
-ALLOWED_HOSTS = [
-    *env.list("DJANGO_ALLOWED_HOSTS"),
-    "healthcheck.railway.app",
-]
-CORS_ALLOWED_ORIGINS: list[str] = env.list("CORS_ALLOWED_ORIGINS", default=[])
-CSRF_TRUSTED_ORIGINS: list[str] = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
 # DATABASES
 # ------------------------------------------------------------------------------
@@ -29,15 +29,27 @@ DATABASES = {"default": env.db("DATABASE_URL")}
 DATABASES["default"]["ATOMIC_REQUESTS"] = True
 DATABASES["default"]["CONN_MAX_AGE"] = 0
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
-if DATABASES["default"]["ENGINE"] == "django.db.backends.postgresql":
+
+
+def configure_db_pool(*, min_size: int, max_size: int, timeout: float) -> None:
+    """Set the psycopg connection pool sizes (postgres only).
+
+    Called by dev.py/prod.py so each environment hardcodes its own pool sizes.
+    See ops/SCALING.md for how to tune them.
+    """
+    if DATABASES["default"]["ENGINE"] != "django.db.backends.postgresql":
+        return
     DATABASES["default"]["OPTIONS"] = {
         **DATABASES["default"].get("OPTIONS", {}),
-        "pool": {
-            "min_size": env.int("DATABASE_POOL_MIN_SIZE", default=0),
-            "max_size": env.int("DATABASE_POOL_MAX_SIZE", default=4),
-            "timeout": env.float("DATABASE_POOL_TIMEOUT", default=10.0),
-        },
+        "pool": {"min_size": min_size, "max_size": max_size, "timeout": timeout},
     }
+
+
+# SESSIONS
+# ------------------------------------------------------------------------------
+# Read sessions from the Redis cache first, falling back to the database on a
+# miss, and write to both, so sessions survive a cache flush.
+SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 
 # REDIS / CELERY
 # ------------------------------------------------------------------------------
@@ -74,6 +86,9 @@ SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
+# Both deployed environments serve a credentialed cross-origin SPA. The specific
+# origins, cookie SameSite, and cookie domain are set per environment.
+CORS_ALLOW_CREDENTIALS = True
 
 # STATIC
 # ------------------------------------------------------------------------------
@@ -85,16 +100,18 @@ STORAGES = {
 
 # EMAIL
 # ------------------------------------------------------------------------------
+# MAILGUN_API_KEY is a secret and stays in the environment; the sender domain and
+# from-address are not secret and are hardcoded here.
 MAILGUN_API_KEY = env("MAILGUN_API_KEY", default=None)
 if MAILGUN_API_KEY:
     INSTALLED_APPS += ["anymail"]
     EMAIL_BACKEND = "anymail.backends.mailgun.EmailBackend"
     ANYMAIL = {
         "MAILGUN_API_KEY": MAILGUN_API_KEY,
-        "MAILGUN_SENDER_DOMAIN": env("MAILGUN_DOMAIN"),
+        "MAILGUN_SENDER_DOMAIN": "mg.example.com",  # TODO: set your Mailgun sending domain
         "MAILGUN_API_URL": "https://api.mailgun.net/v3",
     }
-    DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
+    DEFAULT_FROM_EMAIL = "API <noreply@example.com>"  # TODO: set your from-address
     SERVER_EMAIL = DEFAULT_FROM_EMAIL
     EMAIL_SUBJECT_PREFIX = ""
 
@@ -136,22 +153,25 @@ LOGGING = {
     },
 }
 
+
 # SENTRY
 # ------------------------------------------------------------------------------
-SENTRY_DSN = env("SENTRY_DSN", default=None)
-if SENTRY_DSN:
-    SENTRY_ENVIRONMENT = env(
-        "SENTRY_ENVIRONMENT",
-        default=env("RAILWAY_ENVIRONMENT_NAME", default="deployed"),
-    )
-    SENTRY_RELEASE = env(
-        "SENTRY_RELEASE",
-        default=env("RAILWAY_GIT_COMMIT_SHA", default=None),
-    )
+def configure_sentry(environment: str) -> None:
+    """Initialize Sentry for the given environment name.
+
+    Called by dev.py/prod.py with a hardcoded environment so the value is known
+    at import time. No-op when SENTRY_DSN is unset. The DSN is a secret and the
+    release derives from the Railway-injected commit SHA, so both stay in env.
+    """
+    dsn = env("SENTRY_DSN", default=None)
+    if not dsn:
+        return
     sentry_sdk.init(
-        dsn=SENTRY_DSN,
-        environment=SENTRY_ENVIRONMENT,
-        release=SENTRY_RELEASE,
+        dsn=dsn,
+        environment=environment,
+        release=env(
+            "SENTRY_RELEASE", default=env("RAILWAY_GIT_COMMIT_SHA", default=None)
+        ),
         integrations=[
             LoggingIntegration(level=logging.INFO, event_level=logging.ERROR),
             DjangoIntegration(),

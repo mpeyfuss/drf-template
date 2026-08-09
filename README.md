@@ -14,11 +14,17 @@ for Railway.
 Settings are split across multiple files in `config/settings/`:
 
 ```
-base.py        -- shared foundation (Django, DRF, Celery config)
-  ├── deployed.py  -- Railway config (Sentry, Mailgun, SSL, Redis cache, WhiteNoise)
+base.py        -- shared foundation (Django, DRF, Celery, db-backed sessions)
+  ├── _deployed.py -- shared Railway config (Sentry, Mailgun, SSL, Redis cache, cached_db sessions); not selected directly
+  │     ├── prod.py  -- production (hardcoded hosts/origins, Lax apex cookies)
+  │     └── dev.py   -- dev (hardcoded hosts/origins, SameSite=None cookies for cross-site preview/localhost)
   ├── local.py     -- local development (DEBUG, console email, eager Celery)
   └── test.py      -- test runner (MD5 hasher, in-memory email)
 ```
+
+Deployed hosts, CORS/CSRF origins, DB pool sizes, cookie policy, and the Mailgun
+sender domain / from-address are hardcoded in `dev.py`/`prod.py` -- edit them there.
+Only secrets and Railway-injected connection strings come from the environment.
 
 The active settings file is selected via `DJANGO_SETTINGS_MODULE`.
 
@@ -133,41 +139,38 @@ and PostgreSQL connection capacity.
 
 | Variable | Description |
 |----------|-------------|
-| `DJANGO_SETTINGS_MODULE` | `config.settings.deployed` |
+| `DJANGO_SETTINGS_MODULE` | `config.settings.prod` (production) or `config.settings.dev` (dev environment) |
 | `SECRET_KEY` | Django secret key |
 | `DATABASE_URL` | PostgreSQL connection URL referenced from Railway Postgres |
 | `REDIS_URL` | Redis connection URL referenced from Railway Redis |
-| `SENTRY_DSN` | Sentry DSN for error tracking |
-| `MAILGUN_API_KEY` | Mailgun API key for transactional email |
-| `MAILGUN_DOMAIN` | Mailgun sender domain |
-| `DEFAULT_FROM_EMAIL` | Verified sender, such as `API <api@example.com>` |
-| `DJANGO_ALLOWED_HOSTS` | Comma-separated public/custom domains |
+
+
+#### Optional secrets
+
+| Variable | Description |
+|----------|-------------|
+| `SENTRY_DSN` | Enables Sentry error tracking when set |
+| `MAILGUN_API_KEY` | Enables Anymail/Mailgun transactional email when set |
+| `SENTRY_RELEASE` | Overrides the Sentry release (defaults to the Railway commit SHA) |
 
 #### Railway service references
 
 Reference the database and Redis service variables from both application services,
 for example `DATABASE_URL=${{Postgres.DATABASE_URL}}` and
-`REDIS_URL=${{Redis.REDIS_URL}}`. Set `DJANGO_ALLOWED_HOSTS` to the web service's
-generated Railway domain and any custom domains.
+`REDIS_URL=${{Redis.REDIS_URL}}`.
 
-These values are required by deployed settings. WSGI and Celery also require an
+These secrets are required by deployed settings. WSGI and Celery also require an
 explicit `DJANGO_SETTINGS_MODULE`; they fail at startup instead of silently using
-local settings.
+local settings. Everything else (hosts, CORS/CSRF origins, DB pool sizes, cookie
+policy, Mailgun sender domain, from-address) is hardcoded in `dev.py`/`prod.py`.
 
-#### Optional tuning
+#### Service tuning (set on the relevant Railway service)
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `CORS_ALLOWED_ORIGINS` | empty | Comma-separated frontend origins |
-| `CSRF_TRUSTED_ORIGINS` | empty | Comma-separated trusted CSRF origins |
 | `WEB_CONCURRENCY` | `2` | Gunicorn gevent worker processes |
 | `WEB_WORKER_CONNECTIONS` | `100` | Connections accepted per Gunicorn worker |
 | `CELERY_WORKER_CONCURRENCY` | `100` | Celery worker greenlets |
-| `DATABASE_POOL_MIN_SIZE` | `0` | Connections created eagerly per process |
-| `DATABASE_POOL_MAX_SIZE` | `4` | Maximum database connections per process |
-| `DATABASE_POOL_TIMEOUT` | `10` | Seconds to wait for a pooled connection |
-| `SENTRY_ENVIRONMENT` | Railway environment name | Override the Sentry environment |
-| `SENTRY_RELEASE` | Railway commit SHA | Override the Sentry release |
 
 #### CI (GitHub Actions)
 
@@ -175,9 +178,17 @@ local settings.
 
 ### Domains and CORS
 
-Configure domains through `DJANGO_ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, and
-`CSRF_TRUSTED_ORIGINS`. Railway's deployment healthcheck hostname is added
-automatically.
+Hosts, CORS/CSRF origins, and cookie policy are **hardcoded** in `config/settings/prod.py`
+and `config/settings/dev.py` (search for `# TODO` to find the placeholders to replace).
+Railway's deployment healthcheck hostname is included automatically.
+
+Cookie policy differs by environment. **Production** (`prod.py`) uses `SameSite=Lax`
+cookies with `SESSION_COOKIE_DOMAIN`/`CSRF_COOKIE_DOMAIN` set to the apex domain (e.g.
+`.luci.app`) so the frontend and API subdomains share the session. **Dev** (`dev.py`)
+uses `SameSite=None; Secure` cookies so a `localhost` frontend and Firebase Hosting
+preview URLs (matched by `CORS_ALLOWED_ORIGIN_REGEXES`) can authenticate cross-site.
+Both require `credentials: "include"` on the frontend's fetch calls, and the
+`csrftoken` from `GET /auth/csrf` echoed as the `X-CSRFToken` header on unsafe requests.
 
 ### Railway Setup Checklist
 
@@ -200,35 +211,26 @@ Set the Config-as-Code path under each service's **Settings > General > Config a
 Code**. Railway reads the start command, pre-deploy command, and healthcheck from
 these files.
 
-#### 3. Set shared environment variables on both services
+#### 3. Set environment variables on both services
 
-Use Railway variable references so secrets stay in one place:
+Use `config.settings.prod` on the production environment and `config.settings.dev`
+on the dev environment. Reference the backing-service secrets so they stay in one
+place:
 
 ```
-DJANGO_SETTINGS_MODULE=config.settings.deployed
+DJANGO_SETTINGS_MODULE=config.settings.prod   # config.settings.dev on the dev environment
 DATABASE_URL=${{Postgres.DATABASE_URL}}
 REDIS_URL=${{Redis.REDIS_URL}}
 SECRET_KEY=<generate one: python -c "import secrets; print(secrets.token_urlsafe(64))">
-SENTRY_DSN=<from Sentry project settings>
-MAILGUN_API_KEY=<from Mailgun dashboard>
-MAILGUN_DOMAIN=<your Mailgun sending domain>
-DEFAULT_FROM_EMAIL=API <api@yourdomain.com>
+SENTRY_DSN=<from Sentry project settings; optional>
+MAILGUN_API_KEY=<from Mailgun dashboard; optional>
 ```
 
-#### 4. Set web-only environment variables
+Hosts, CORS/CSRF origins, and the Mailgun sender domain / from-address are not env
+vars -- edit the `# TODO` placeholders in `config/settings/prod.py` and
+`config/settings/dev.py` to match your real domains before deploying.
 
-```
-DJANGO_ALLOWED_HOSTS=<railway-generated-domain>,<custom-domain-if-any>
-```
-
-If a frontend will call the API cross-origin, also set on the web service:
-
-```
-CORS_ALLOWED_ORIGINS=https://your-frontend.com
-CSRF_TRUSTED_ORIGINS=https://your-frontend.com
-```
-
-#### 5. Deploy
+#### 4. Deploy
 
 - Deploy the **web** service first. Its pre-deploy command runs
   `python manage.py migrate --noinput` and stops the deployment if it fails.
@@ -239,7 +241,7 @@ CSRF_TRUSTED_ORIGINS=https://your-frontend.com
   different code versions. See [`ops/MIGRATIONS.md`](ops/MIGRATIONS.md) for the playbook
   and the CI checks that enforce it.
 
-#### 6. Create a superuser
+#### 5. Create a superuser
 
 Run a one-off command via the Railway CLI or dashboard shell on the web service:
 
@@ -247,7 +249,7 @@ Run a one-off command via the Railway CLI or dashboard shell on the web service:
 python manage.py createsuperuser
 ```
 
-#### 7. Verify
+#### 6. Verify
 
 - Hit `https://<your-domain>/health` -- should return `{"status": "ok"}`.
 - Log into `https://<your-domain>/admin` with the superuser account.
@@ -260,16 +262,48 @@ python manage.py createsuperuser
   they will schedule duplicate tasks.
 - **Connection budget**: Gunicorn defaults to 2 workers x 4 pool connections = 8
   database connections. Celery adds up to 4 more. Railway's PostgreSQL starter plan
-  has a connection limit -- check your plan and tune `DATABASE_POOL_MAX_SIZE` and
-  `WEB_CONCURRENCY` accordingly. See [`ops/SCALING.md`](ops/SCALING.md) for the full
-  model (the two concurrency dials, the connection-budget inequality, and how to tune).
+  has a connection limit -- check your plan and tune the pool `max_size`
+  (`configure_db_pool` in `dev.py`/`prod.py`) and `WEB_CONCURRENCY` accordingly.
+  See [`ops/SCALING.md`](ops/SCALING.md)
+  for the full model (the two concurrency dials, the connection-budget inequality, and how to tune).
 - **Custom domains**: Add custom domains in Railway's service settings, then add them
-  to `DJANGO_ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, and `CSRF_TRUSTED_ORIGINS`.
+  to `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, and `CSRF_TRUSTED_ORIGINS` in
+  `config/settings/prod.py` (or `dev.py`).
+
+## Authentication
+
+The default is **Django session authentication** (DRF's `SessionAuthentication`),
+backed by the `cached_db` session engine on deployed environments: sessions are read
+from the Redis cache first and fall back to the database on a miss, while writes go to
+both. This gives you fast, cache-speed reads without making Redis a source of truth --
+sessions survive a cache flush by reloading from the database. For the large majority
+of web apps this scales just fine out of the box.
+
+Because sessions ride on cookies, unsafe requests are CSRF-protected. A decoupled SPA
+bootstraps the token from `GET /auth/csrf`, which sets the `csrftoken` cookie and returns
+the token to echo as the `X-CSRFToken` header on POST/PUT/PATCH/DELETE. The cookie is
+intentionally not `HttpOnly` so the frontend can read it (the CSRF token is not a secret
+in the double-submit model). See [Domains and CORS](#domains-and-cors) for the per-environment
+cookie policy.
+
+Consider a different strategy when session cookies stop fitting:
+
+- **Fully cross-site frontend** (no shared apex domain, or a third-party embed) where
+  `SameSite=None` cookies are awkward or blocked.
+- **Native mobile / non-browser clients** that have no cookie jar and want a bearer token.
+
+In those cases reach for a token strategy such as
+[django-rest-knox](https://github.com/jazzband/django-rest-knox) (server-side, revocable
+tokens -- a good middle ground) or JWTs via
+[djangorestframework-simplejwt](https://github.com/jazzband/djangorestframework-simplejwt)
+(stateless, but revocation and rotation are on you). Pick based on whether you need
+server-side revocation and how much token lifecycle you want to own.
 
 ## API
 
 - `GET /` -- index (public)
 - `GET /health` -- database readiness check (public)
+- `GET /auth/csrf` -- set the CSRF cookie and return the token (public)
 - `GET /schema` -- OpenAPI schema (admin only)
 - `GET /docs` -- Swagger UI (admin only)
 - `GET /admin` -- Django admin

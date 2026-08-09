@@ -34,6 +34,12 @@ point.
 | `CELERY_WORKER_CONCURRENCY` | `100` | greenlets in the (single) Celery process | I/O concurrency + downstream limits |
 | `DATABASE_POOL_MAX_SIZE` | `4` | DB connections **per process** | Postgres `max_connections` |
 
+> **Note:** `WEB_CONCURRENCY`, `WEB_WORKER_CONNECTIONS`, and `CELERY_WORKER_CONCURRENCY`
+> are environment variables read by the Railway start commands. The DB pool sizes
+> (referred to below as `DATABASE_POOL_MIN_SIZE` / `DATABASE_POOL_MAX_SIZE` /
+> `DATABASE_POOL_TIMEOUT`) are hardcoded per environment via the `configure_db_pool`
+> call in `config/settings/dev.py` and `config/settings/prod.py` — tune them there.
+
 The critical distinction:
 
 - **Process count is the CPU dial.** Python's GIL means one process saturates roughly one

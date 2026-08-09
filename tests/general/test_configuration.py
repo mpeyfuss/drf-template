@@ -17,7 +17,7 @@ def _deployed_env() -> dict[str, str]:
     env = os.environ.copy()
     env.update(
         {
-            "DJANGO_SETTINGS_MODULE": "config.settings.deployed",
+            "DJANGO_SETTINGS_MODULE": "config.settings.prod",
             "DJANGO_READ_DOT_ENV_FILE": "False",
             "SECRET_KEY": (
                 "test-only-secret-key-with-more-than-fifty-unique-characters-123456789"
@@ -26,9 +26,6 @@ def _deployed_env() -> dict[str, str]:
             "REDIS_URL": "redis://localhost:6379/0",
             "SENTRY_DSN": "",
             "MAILGUN_API_KEY": "placeholder",
-            "MAILGUN_DOMAIN": "example.com",
-            "DEFAULT_FROM_EMAIL": "API <noreply@example.com>",
-            "DJANGO_ALLOWED_HOSTS": "example.com",
         },
     )
     return env

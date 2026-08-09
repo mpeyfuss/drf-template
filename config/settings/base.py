@@ -47,7 +47,6 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     "django_celery_results",
     "rest_framework",
-    "rest_framework.authtoken",
     "corsheaders",
     "drf_spectacular",
     "drf_standardized_errors",
@@ -127,8 +126,16 @@ TEMPLATES = [
 # SECURITY
 # ------------------------------------------------------------------------------
 SESSION_COOKIE_HTTPONLY = True
-CSRF_COOKIE_HTTPONLY = True
+# A decoupled SPA must read the csrftoken cookie to echo it as the X-CSRFToken
+# header; the CSRF token is not a secret in the double-submit model.
+CSRF_COOKIE_HTTPONLY = False
 X_FRAME_OPTIONS = "DENY"
+
+# SESSIONS
+# ------------------------------------------------------------------------------
+# Plain database-backed sessions by default. Deployed environments override this
+# with cached_db (Redis in front of the database) in _deployed.py.
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
 # EMAIL
 # ------------------------------------------------------------------------------
@@ -197,7 +204,6 @@ CELERY_WORKER_HIJACK_ROOT_LOGGER = False
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework.authentication.SessionAuthentication",
-        "rest_framework.authentication.TokenAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_RENDERER_CLASSES": ("drf_orjson_renderer.renderers.ORJSONRenderer",),
